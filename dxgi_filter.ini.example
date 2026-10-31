@@ -1,0 +1,19 @@
+; dxgi_filter.ini -- place next to dxgi.dll (in the folder with the game's exe)
+[Filter]
+
+; ---- KEEP mode (recommended) ------------------------------------------------
+; Only adapters matching one of these stay visible; everything else is hidden.
+; Match by name (case-insensitive substring, comma separated)...
+KeepNameContains=RTX 4080
+; ...and/or by vendor ID (hex): 10DE = NVIDIA, 1002 = AMD, 8086 = Intel
+;KeepVendorIds=10DE
+
+; ---- HIDE mode (used only if no Keep* line is set) --------------------------
+; Hide these vendor IDs. 1414 = "Microsoft Basic Render Driver" (software).
+;HideVendorIds=1002,1414
+
+; If Windows lists the same GPU twice, hide the copy without display outputs.
+HideDuplicateWithoutOutputs=1
+
+; Write dxgi_filter.log next to the DLL (adapters, VRAM, outputs, decisions).
+Log=1

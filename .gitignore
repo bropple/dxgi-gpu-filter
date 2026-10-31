@@ -1,0 +1,8 @@
+# Never commit binaries: releases are built by CI from source.
+*.dll
+*.exe
+*.obj
+*.o
+*.log
+build/
+dist/

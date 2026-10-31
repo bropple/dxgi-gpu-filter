@@ -1,0 +1,64 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write        # create releases on tags
+      id-token: write        # provenance attestation
+      attestations: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install MinGW-w64 cross compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends g++-mingw-w64-x86-64-posix
+
+      - name: Build dxgi.dll
+        run: |
+          mkdir -p dist
+          x86_64-w64-mingw32-g++ -O2 -std=c++17 -Wall -Wextra -shared -static \
+            -o dist/dxgi.dll src/dxgi_filter.cpp src/dxgi.def
+
+      - name: Sanity-check exports
+        run: |
+          x86_64-w64-mingw32-objdump -p dist/dxgi.dll | grep -q CreateDXGIFactory1
+          x86_64-w64-mingw32-objdump -p dist/dxgi.dll | grep 'DLL Name'
+
+      - name: Assemble release files
+        run: |
+          cp dxgi_filter.ini.example dist/
+          cp scripts/install.ps1 dist/
+          cd dist && sha256sum dxgi.dll > SHA256SUMS.txt && cat SHA256SUMS.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dxgi-gpu-filter
+          path: dist/
+
+      - name: Attest build provenance
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist/dxgi.dll
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/dxgi.dll
+            dist/dxgi_filter.ini.example
+            dist/install.ps1
+            dist/SHA256SUMS.txt
